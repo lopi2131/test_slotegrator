@@ -1,0 +1,124 @@
+plugins {
+    id 'java'
+    id "io.qameta.allure" version "2.9.6"
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+allure {
+    version = "${allureVersion}"
+
+    useJUnit5 {
+        version = "${allureVersion}"
+    }
+}
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+tasks.withType(Test) {
+    useJUnitPlatform()
+}
+
+configurations {
+    cucumberRuntime {
+        extendsFrom testImplementation
+    }
+}
+
+dependencies {
+    //JUnit
+    implementation "org.junit.jupiter:junit-jupiter-api:${jupiterVersion}"
+    implementation "org.junit.jupiter:junit-jupiter-engine:${jupiterVersion}"
+    implementation "org.junit.jupiter:junit-jupiter-params:${jupiterVersion}"
+    testImplementation "org.junit.platform:junit-platform-launcher:1.8.2"
+    testImplementation "org.junit.jupiter:junit-jupiter:${jupiterVersion}"
+    testImplementation 'org.junit.platform:junit-platform-suite-api:1.8.2'
+    implementation "org.junit.vintage:junit-vintage-engine:${jupiterVersion}"
+
+    //RestAssured
+    implementation "io.rest-assured:rest-assured:${restAssuredVersion}"
+    implementation "io.rest-assured:json-path:${restAssuredVersion}"
+
+    //Чтение конфигов
+    implementation "com.typesafe:config:${typeSafeVersion}"
+
+    //Lombok
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+    //Работа с JSON
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
+
+    //Allure
+    implementation "io.qameta.allure:allure-java-commons:${allureVersion}"
+    implementation "io.qameta.allure:allure-rest-assured:${allureVersion}"
+
+    //Selenium
+    implementation "org.seleniumhq.selenium:selenium-java:${seleniumVersion}"
+
+    //Скриншоты
+    implementation "ru.yandex.qatools.ashot:ashot:${ashotVersion}"
+
+    //Cucumber
+    implementation "io.cucumber:cucumber-junit:${cucumberVersion}"
+    implementation "io.cucumber:cucumber-java8:${cucumberVersion}"
+    implementation "io.cucumber:cucumber-junit-platform-engine:${cucumberVersion}"
+    implementation "org.junit.jupiter:junit-jupiter-api:${jupiterVersion}"
+    implementation "info.cukes:cucumber-java:${infoCukes}"
+    implementation "info.cukes:cucumber-junit:${infoCukes}"
+    implementation "info.cukes:cucumber-core:${infoCukes}"
+    implementation "io.cucumber:cucumber-junit-platform-engine:${cucumberVersion}"
+    implementation "info.cukes:gherkin:2.12.2"
+    implementation 'io.qameta.allure:allure-cucumber5-jvm:2.13.3'
+
+    //Тестовые данные
+    implementation 'com.github.javafaker:javafaker:1.0.2'
+
+    //WebDriver
+    implementation 'io.github.bonigarcia:webdrivermanager:5.0.3'
+
+    implementation "org.aspectj:aspectjweaver:1.9.7"
+    implementation "org.aspectj:aspectjrt:1.9.7"
+}
+
+task cucumber() {
+    dependsOn assemble, compileTestJava
+    doLast {
+        javaexec {
+            systemProperty 'allure.results.directory', "$buildDir/allure-results"
+            main = "io.cucumber.core.cli.Main"
+            classpath = configurations.cucumberRuntime + sourceSets.main.output + sourceSets.test.output
+            args = ['--plugin', 'pretty', '--plugin', 'io.qameta.allure.cucumber5jvm.AllureCucumber5Jvm', '--strict',
+                    '--glue', 'glue', 'src/test/resources/features ']
+        }
+    }
+}
+
+task tagsTest(type: Test) {
+    String itags = System.getProperty("includeTags") ?
+            System.getProperty("includeTags") : 'non-existent';
+    String etags = System.getProperty("excludeTags") ?
+            System.getProperty("excludeTags") : 'non-existent';
+
+    useJUnitPlatform {
+        includeTags itags
+        excludeTags etags
+    }
+}
+
+test {
+    useJUnitPlatform {}
+}
